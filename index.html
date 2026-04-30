@@ -28,23 +28,13 @@ body {
 #card-wrap {
   width: 100%;
   max-width: 420px;
-  perspective: 1200px;
   cursor: pointer;
 }
 #card {
   width: 100%;
   min-height: 240px;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
-}
-#card.flipped { transform: rotateY(180deg); }
-.face {
-  position: absolute;
-  width: 100%;
-  min-height: 240px;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  background: #1f2937;
+  border: 1px solid #374151;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -52,43 +42,27 @@ body {
   justify-content: center;
   padding: 36px 28px;
   text-align: center;
+  gap: 18px;
+  transition: border-color 0.2s;
 }
-#front-face {
-  background: #1f2937;
-  border: 1px solid #374151;
-}
-#back-face {
-  background: #1e3a5f;
-  border: 1px solid #2563eb;
-  transform: rotateY(180deg);
-}
-#front-text {
-  font-size: 38px;
-  line-height: 1.35;
-  font-weight: 500;
-}
+#card:active { border-color: #2563eb; }
+.line { opacity: 0; transition: opacity 0.3s ease; }
+.line.visible { opacity: 1; }
+#line-kanji { font-size: 38px; font-weight: 500; line-height: 1.35; }
+#line-kana  { font-size: 22px; color: #93c5fd; }
+#line-eng   { font-size: 22px; color: #f3f4f6; line-height: 1.4; }
 #hint {
   font-size: 12px;
   color: #4b5563;
-  margin-top: 16px;
   text-transform: uppercase;
   letter-spacing: 1px;
-}
-#back-kana {
-  font-size: 22px;
-  color: #93c5fd;
-  margin-bottom: 16px;
-  min-height: 28px;
-}
-#back-english {
-  font-size: 22px;
-  color: #f3f4f6;
-  line-height: 1.4;
+  transition: opacity 0.2s;
 }
 #controls {
   display: flex;
   gap: 12px;
   margin-top: 28px;
+  align-items: center;
 }
 button {
   background: #1f2937;
@@ -102,13 +76,25 @@ button {
   transition: background 0.15s;
 }
 button:active { background: #374151; }
-#shuffle-btn {
+#mode-btn {
   width: auto;
-  padding: 14px 28px;
-  font-size: 14px;
+  padding: 14px 20px;
+  font-size: 13px;
   color: #a5b4fc;
   border-color: #4338ca;
   letter-spacing: 0.5px;
+}
+#mode-btn.reversed {
+  color: #fcd34d;
+  border-color: #d97706;
+}
+#shuffle-btn {
+  width: auto;
+  padding: 14px 24px;
+  font-size: 13px;
+  color: #6b7280;
+  border-color: #374151;
+  margin-top: 12px;
 }
 </style>
 </head>
@@ -118,32 +104,872 @@ button:active { background: #374151; }
 
 <div id="card-wrap">
   <div id="card">
-    <div class="face" id="front-face">
-      <div id="front-text"></div>
-      <div id="hint">tap to reveal</div>
-    </div>
-    <div class="face" id="back-face">
-      <div id="back-kana"></div>
-      <div id="back-english"></div>
-    </div>
+    <div id="line-kanji" class="line"></div>
+    <div id="line-kana"  class="line"></div>
+    <div id="line-eng"   class="line"></div>
+    <div id="hint">tap to reveal</div>
   </div>
 </div>
 
 <div id="controls">
   <button onclick="nav(-1)">&#8592;</button>
   <button onclick="nav(1)">&#8594;</button>
+  <button id="mode-btn" onclick="toggleMode()">EN first</button>
 </div>
-<br>
 <button id="shuffle-btn" onclick="reshuffle()">&#x1F500; Shuffle</button>
 
 <script>
 // ── VOCAB ─────────────────────────────────────────────────────────────────────
 // Each entry: { f: "front (kanji/phrase)", k: "kana reading", e: "english" }
-// To add words, copy the pattern and append to the array.
-const VOCAB = [{"f": "天気が良さそう", "k": "てんきがよさそう", "e": "The weather looks good"}, {"f": "道路がねている", "k": "どうろがねている", "e": "The road is uneven"}, {"f": "増える", "k": "ふえる", "e": "To increase"}, {"f": "留学生", "k": "りゅうがくせい", "e": "International student"}, {"f": "転勤", "k": "てんきん", "e": "Transfer (as in to another office)"}, {"f": "寂しい", "k": "さびしい", "e": "Lonely"}, {"f": "忙しい", "k": "いそがしい", "e": "Busy"}, {"f": "ほとんど", "k": "", "e": "Most"}, {"f": "午前", "k": "ごぜん", "e": "A.m."}, {"f": "直接会って", "k": "ちょくせつあって", "e": "Meet in person"}, {"f": "支払い", "k": "しはらい", "e": "Payment"}, {"f": "結局", "k": "けっきょく", "e": "As it turns out"}, {"f": "行き先", "k": "いきさき", "e": "Destination"}, {"f": "浜", "k": "はま", "e": "Beach"}, {"f": "試合", "k": "しあい", "e": "Game"}, {"f": "中止", "k": "ちゅうし", "e": "Cancel"}, {"f": "沸いた", "k": "わいた", "e": "Boiled"}, {"f": "調べる", "k": "しらべる", "e": "To investigate, to look up"}, {"f": "こわれる", "k": "", "e": "To break"}, {"f": "ねだん", "k": "", "e": "Price"}, {"f": "はれている", "k": "", "e": "It's sunny"}, {"f": "量", "k": "りょう", "e": "Amount"}, {"f": "おすすめ", "k": "", "e": "Recommendation"}, {"f": "番組", "k": "ばんぐみ", "e": "Program (as on TV)"}, {"f": "紹介", "k": "しょうかい", "e": "Introduction"}, {"f": "留学", "k": "りゅうがく", "e": "Study abroad"}, {"f": "洗剤", "k": "せんざい", "e": "Detergent"}, {"f": "掃除機", "k": "そうじき", "e": "Vacuum cleaner"}, {"f": "階段", "k": "かいだん", "e": "Stairs"}, {"f": "ひける", "k": "", "e": "To pull"}, {"f": "曲", "k": "きょく", "e": "Song"}, {"f": "かかる", "k": "", "e": "To cost"}, {"f": "潰れる", "k": "つぶれる", "e": "To go bankrupt"}, {"f": "洗濯物", "k": "せんたくもの", "e": "Laundry"}, {"f": "入れる", "k": "いれる", "e": "To put in"}, {"f": "だいぶ", "k": "", "e": "Quite a bit"}, {"f": "予報", "k": "よほう", "e": "Forecast"}, {"f": "夕方", "k": "ゆうがた", "e": "Evening"}, {"f": "会議室", "k": "かいぎしつ", "e": "Conference room"}, {"f": "つとめている", "k": "", "e": "Working"}, {"f": "元同僚", "k": "もとどうりょ", "e": "Former colleague"}, {"f": "滞在する", "k": "たいざいする", "e": "To stay somewhere (as on a trip)"}, {"f": "招待する", "k": "しょうたいする", "e": "To invite"}, {"f": "訪問に行く", "k": "ほうもんに行く", "e": "To visit"}, {"f": "礼儀正しい", "k": "れいぎだしい", "e": "Polite"}, {"f": "すぐ", "k": "", "e": "Immediately"}, {"f": "近くのすぐ", "k": "ちかくのすぐ", "e": "Right nearby"}, {"f": "命令形", "k": "めいれいけい", "e": "Imperative form"}, {"f": "禁止形", "k": "きんしけい", "e": "Prohibitive form"}, {"f": "渡る", "k": "わたる", "e": "To cross"}, {"f": "混ぜる", "k": "まぜる", "e": "To mix"}, {"f": "会議", "k": "かいぎ", "e": "Meeting"}, {"f": "貯金", "k": "ちょきん", "e": "Saving"}, {"f": "出席", "k": "しゅっせき", "e": "Attendance"}, {"f": "ていねい", "k": "", "e": "Polite"}, {"f": "人気", "k": "にんき", "e": "Popularity"}, {"f": "招待", "k": "しょうたい", "e": "Invitation"}, {"f": "追加", "k": "ついか", "e": "Addition"}, {"f": "片づく", "k": "かたづく", "e": "To clean up"}, {"f": "すてる", "k": "", "e": "To discard"}, {"f": "将来", "k": "しょうらい", "e": "Future"}, {"f": "備える", "k": "そなえる", "e": "To prepare"}, {"f": "動作", "k": "どうさ", "e": "Operation"}, {"f": "完了", "k": "かんりょう", "e": "Complete (adj.)"}, {"f": "準備", "k": "じゅんび", "e": "Preparation"}, {"f": "必ず", "k": "かならず", "e": "Surely"}, {"f": "事故", "k": "じこ", "e": "Accident"}, {"f": "おくれる", "k": "", "e": "To delay"}, {"f": "編ぬ", "k": "あぬ", "e": "To knit"}, {"f": "〜さしあげる", "k": "", "e": "Polite form of ~ageru"}, {"f": "〜くださる", "k": "", "e": "Polite form of ~kureru"}, {"f": "〜いただく", "k": "", "e": "Polite form of morau"}, {"f": "さそってくれてありがとう", "k": "", "e": "Thank you for inviting me"}, {"f": "授業料", "k": "じゅぎょうりょう", "e": "Tuition fees"}, {"f": "本だな", "k": "ほんだな", "e": "Bookshelf"}, {"f": "結果", "k": "けっか", "e": "Result"}, {"f": "発表", "k": "はっぴょう", "e": "Announcement"}, {"f": "はさみ", "k": "", "e": "Scissors"}, {"f": "紛らわしい", "k": "まぎらわしい", "e": "Confusing"}, {"f": "情報", "k": "じょうほう", "e": "Information"}, {"f": "提供する", "k": "ていきょうする", "e": "To provide"}, {"f": "いただきありがとうございます", "k": "", "e": "Formal thank you"}, {"f": "週半ば", "k": "", "e": "Mid-week"}, {"f": "理解", "k": "りかい", "e": "Understanding"}, {"f": "確認する", "k": "かくにんする", "e": "To confirm (something)"}, {"f": "受付", "k": "うけつけ", "e": "Reception"}, {"f": "下旬", "k": "げじゅん", "e": "Late in the month"}, {"f": "上旬", "k": "じょうじゅん", "e": "Early in the month"}, {"f": "検討", "k": "けんとう", "e": "Consider"}, {"f": "ご担当者様", "k": "ごたんとうしゃさま", "e": "To whom it may concern"}, {"f": "初めて連絡いたします", "k": "はじめてれんらくいたします", "e": "This is my first time contacting you"}, {"f": "大丈夫", "k": "だいじょうぶ", "e": "OK"}, {"f": "会社", "k": "かいしゃ", "e": "Company"}, {"f": "〜のに", "k": "", "e": "Even though〜"}, {"f": "入る", "k": "はいる", "e": "To enter"}, {"f": "〜して", "k": "", "e": "Please do〜, I'll do〜"}, {"f": "楽しむ", "k": "たのしむ", "e": "To enjoy"}, {"f": "おく", "k": "", "e": "To prepare"}, {"f": "〜してある", "k": "", "e": "I have done〜"}, {"f": "別", "k": "べつ", "e": "Different"}, {"f": "別に", "k": "べつに", "e": "Not so much, It's not important"}, {"f": "答え合わせ こたえあわせ", "k": "", "e": "Checking answers"}, {"f": "確認", "k": "かくにん", "e": "Confirmation"}, {"f": "特長", "k": "とくちょう", "e": "Features"}, {"f": "出題", "k": "しゅつだい", "e": "Question"}, {"f": "効率", "k": "こうりつ", "e": "Efficiency"}, {"f": "学習", "k": "がくしゅう", "e": "Study"}, {"f": "対策", "k": "たいさく", "e": "Countermeasure"}, {"f": "受験対策", "k": "じゅけんたいさく", "e": "Test preparation"}, {"f": "役", "k": "やく", "e": "Role"}, {"f": "役に立つ", "k": "やくにたつ", "e": "Useful"}, {"f": "文章", "k": "ぶんしょう", "e": "Sentence, Reading comprehension"}, {"f": "聞き取り", "k": "ききとり", "e": "Listening"}, {"f": "随分", "k": "ずいぶん", "e": "Quite"}, {"f": "かぶる", "k": "", "e": "Wear"}, {"f": "運転", "k": "うんてん", "e": "Driving"}, {"f": "間に合う", "k": "まにあう", "e": "Arrive in time"}, {"f": "少ない", "k": "すくない", "e": "Few"}, {"f": "服", "k": "ふく", "e": "Clothes"}, {"f": "など", "k": "", "e": "Etc."}, {"f": "出張", "k": "しゅっちょう", "e": "Business trip"}, {"f": "パソコン", "k": "", "e": "PC"}, {"f": "ちこく", "k": "", "e": "Late"}, {"f": "引っこし", "k": "ひっこし", "e": "Moving"}, {"f": "返事", "k": "へんじ", "e": "Reply"}, {"f": "あんなに", "k": "", "e": "That much"}, {"f": "背の高い", "k": "せのたかい", "e": "Tall"}, {"f": "さびしい", "k": "", "e": "Lonely"}, {"f": "反対", "k": "はんたい", "e": "Opposite"}, {"f": "空いています", "k": "すいています", "e": "Not crowded, Available"}, {"f": "住みやすい", "k": "すみやすい", "e": "Livable"}, {"f": "生活", "k": "せいかつ", "e": "Life, Living experience"}, {"f": "試験", "k": "しけん", "e": "Test"}, {"f": "合格", "k": "ごうかく", "e": "Pass a test"}, {"f": "目指す", "k": "めざす", "e": "Aim"}, {"f": "日常", "k": "にちじょう", "e": "Everyday, Everyday life"}, {"f": "基本的、基本", "k": "きほんてき、きほん", "e": "Basic"}, {"f": "文型", "k": "ぶんけい", "e": "Sentence pattern"}, {"f": "かんとく", "k": "", "e": "Director"}, {"f": "かぶん", "k": "", "e": "Stocks"}, {"f": "高校生", "k": "", "e": "High school student"}, {"f": "りょうしん", "k": "", "e": "Parents"}, {"f": "いもうと", "k": "", "e": "Younger sister"}, {"f": "あね", "k": "", "e": "Older sister"}, {"f": "あに", "k": "", "e": "Older brother"}, {"f": "〜しませんか", "k": "", "e": "Would you like to〜？"}, {"f": "〜でも", "k": "", "e": "Example"}, {"f": "〜何か", "k": "", "e": "Example, informal"}, {"f": "しか〜ない", "k": "", "e": "Negative"}, {"f": "れいぞうこ", "k": "", "e": "Refrigerator"}, {"f": "〜まい", "k": "", "e": "Flat thing counter"}, {"f": "そうじ", "k": "", "e": "Cleanup"}, {"f": "せんたく", "k": "", "e": "Laundry"}, {"f": "このごろ", "k": "", "e": "These days"}, {"f": "せまい", "k": "", "e": "small"}, {"f": "までに", "k": "", "e": "by"}, {"f": "まで", "k": "", "e": "Until"}];
+// To add words, append to the array below.
+const VOCAB = [
+  {
+    "f": "天気が良さそう",
+    "k": "てんきがよさそう",
+    "e": "The weather looks good"
+  },
+  {
+    "f": "道路がねている",
+    "k": "どうろがねている",
+    "e": "The road is uneven"
+  },
+  {
+    "f": "増える",
+    "k": "ふえる",
+    "e": "To increase"
+  },
+  {
+    "f": "留学生",
+    "k": "りゅうがくせい",
+    "e": "International student"
+  },
+  {
+    "f": "転勤",
+    "k": "てんきん",
+    "e": "Transfer (as in to another office)"
+  },
+  {
+    "f": "寂しい",
+    "k": "さびしい",
+    "e": "Lonely"
+  },
+  {
+    "f": "忙しい",
+    "k": "いそがしい",
+    "e": "Busy"
+  },
+  {
+    "f": "ほとんど",
+    "k": "",
+    "e": "Most"
+  },
+  {
+    "f": "午前",
+    "k": "ごぜん",
+    "e": "A.m."
+  },
+  {
+    "f": "直接会って",
+    "k": "ちょくせつあって",
+    "e": "Meet in person"
+  },
+  {
+    "f": "支払い",
+    "k": "しはらい",
+    "e": "Payment"
+  },
+  {
+    "f": "結局",
+    "k": "けっきょく",
+    "e": "As it turns out"
+  },
+  {
+    "f": "行き先",
+    "k": "いきさき",
+    "e": "Destination"
+  },
+  {
+    "f": "浜",
+    "k": "はま",
+    "e": "Beach"
+  },
+  {
+    "f": "試合",
+    "k": "しあい",
+    "e": "Game"
+  },
+  {
+    "f": "中止",
+    "k": "ちゅうし",
+    "e": "Cancel"
+  },
+  {
+    "f": "沸いた",
+    "k": "わいた",
+    "e": "Boiled"
+  },
+  {
+    "f": "調べる",
+    "k": "しらべる",
+    "e": "To investigate, to look up"
+  },
+  {
+    "f": "こわれる",
+    "k": "",
+    "e": "To break"
+  },
+  {
+    "f": "ねだん",
+    "k": "",
+    "e": "Price"
+  },
+  {
+    "f": "はれている",
+    "k": "",
+    "e": "It's sunny"
+  },
+  {
+    "f": "量",
+    "k": "りょう",
+    "e": "Amount"
+  },
+  {
+    "f": "おすすめ",
+    "k": "",
+    "e": "Recommendation"
+  },
+  {
+    "f": "番組",
+    "k": "ばんぐみ",
+    "e": "Program (as on TV)"
+  },
+  {
+    "f": "紹介",
+    "k": "しょうかい",
+    "e": "Introduction"
+  },
+  {
+    "f": "留学",
+    "k": "りゅうがく",
+    "e": "Study abroad"
+  },
+  {
+    "f": "洗剤",
+    "k": "せんざい",
+    "e": "Detergent"
+  },
+  {
+    "f": "掃除機",
+    "k": "そうじき",
+    "e": "Vacuum cleaner"
+  },
+  {
+    "f": "階段",
+    "k": "かいだん",
+    "e": "Stairs"
+  },
+  {
+    "f": "ひける",
+    "k": "",
+    "e": "To pull"
+  },
+  {
+    "f": "曲",
+    "k": "きょく",
+    "e": "Song"
+  },
+  {
+    "f": "かかる",
+    "k": "",
+    "e": "To cost"
+  },
+  {
+    "f": "潰れる",
+    "k": "つぶれる",
+    "e": "To go bankrupt"
+  },
+  {
+    "f": "洗濯物",
+    "k": "せんたくもの",
+    "e": "Laundry"
+  },
+  {
+    "f": "入れる",
+    "k": "いれる",
+    "e": "To put in"
+  },
+  {
+    "f": "だいぶ",
+    "k": "",
+    "e": "Quite a bit"
+  },
+  {
+    "f": "予報",
+    "k": "よほう",
+    "e": "Forecast"
+  },
+  {
+    "f": "夕方",
+    "k": "ゆうがた",
+    "e": "Evening"
+  },
+  {
+    "f": "会議室",
+    "k": "かいぎしつ",
+    "e": "Conference room"
+  },
+  {
+    "f": "つとめている",
+    "k": "",
+    "e": "Working"
+  },
+  {
+    "f": "元同僚",
+    "k": "もとどうりょ",
+    "e": "Former colleague"
+  },
+  {
+    "f": "滞在する",
+    "k": "たいざいする",
+    "e": "To stay somewhere (as on a trip)"
+  },
+  {
+    "f": "招待する",
+    "k": "しょうたいする",
+    "e": "To invite"
+  },
+  {
+    "f": "訪問に行く",
+    "k": "ほうもんに行く",
+    "e": "To visit"
+  },
+  {
+    "f": "礼儀正しい",
+    "k": "れいぎだしい",
+    "e": "Polite"
+  },
+  {
+    "f": "すぐ",
+    "k": "",
+    "e": "Immediately"
+  },
+  {
+    "f": "近くのすぐ",
+    "k": "ちかくのすぐ",
+    "e": "Right nearby"
+  },
+  {
+    "f": "命令形",
+    "k": "めいれいけい",
+    "e": "Imperative form"
+  },
+  {
+    "f": "禁止形",
+    "k": "きんしけい",
+    "e": "Prohibitive form"
+  },
+  {
+    "f": "渡る",
+    "k": "わたる",
+    "e": "To cross"
+  },
+  {
+    "f": "混ぜる",
+    "k": "まぜる",
+    "e": "To mix"
+  },
+  {
+    "f": "会議",
+    "k": "かいぎ",
+    "e": "Meeting"
+  },
+  {
+    "f": "貯金",
+    "k": "ちょきん",
+    "e": "Saving"
+  },
+  {
+    "f": "出席",
+    "k": "しゅっせき",
+    "e": "Attendance"
+  },
+  {
+    "f": "ていねい",
+    "k": "",
+    "e": "Polite"
+  },
+  {
+    "f": "人気",
+    "k": "にんき",
+    "e": "Popularity"
+  },
+  {
+    "f": "招待",
+    "k": "しょうたい",
+    "e": "Invitation"
+  },
+  {
+    "f": "追加",
+    "k": "ついか",
+    "e": "Addition"
+  },
+  {
+    "f": "片づく",
+    "k": "かたづく",
+    "e": "To clean up"
+  },
+  {
+    "f": "すてる",
+    "k": "",
+    "e": "To discard"
+  },
+  {
+    "f": "将来",
+    "k": "しょうらい",
+    "e": "Future"
+  },
+  {
+    "f": "備える",
+    "k": "そなえる",
+    "e": "To prepare"
+  },
+  {
+    "f": "動作",
+    "k": "どうさ",
+    "e": "Operation"
+  },
+  {
+    "f": "完了",
+    "k": "かんりょう",
+    "e": "Complete (adj.)"
+  },
+  {
+    "f": "準備",
+    "k": "じゅんび",
+    "e": "Preparation"
+  },
+  {
+    "f": "必ず",
+    "k": "かならず",
+    "e": "Surely"
+  },
+  {
+    "f": "事故",
+    "k": "じこ",
+    "e": "Accident"
+  },
+  {
+    "f": "おくれる",
+    "k": "",
+    "e": "To delay"
+  },
+  {
+    "f": "編ぬ",
+    "k": "あぬ",
+    "e": "To knit"
+  },
+  {
+    "f": "〜さしあげる",
+    "k": "",
+    "e": "Polite form of ~ageru"
+  },
+  {
+    "f": "〜くださる",
+    "k": "",
+    "e": "Polite form of ~kureru"
+  },
+  {
+    "f": "〜いただく",
+    "k": "",
+    "e": "Polite form of morau"
+  },
+  {
+    "f": "さそってくれてありがとう",
+    "k": "",
+    "e": "Thank you for inviting me"
+  },
+  {
+    "f": "授業料",
+    "k": "じゅぎょうりょう",
+    "e": "Tuition fees"
+  },
+  {
+    "f": "本だな",
+    "k": "ほんだな",
+    "e": "Bookshelf"
+  },
+  {
+    "f": "結果",
+    "k": "けっか",
+    "e": "Result"
+  },
+  {
+    "f": "発表",
+    "k": "はっぴょう",
+    "e": "Announcement"
+  },
+  {
+    "f": "はさみ",
+    "k": "",
+    "e": "Scissors"
+  },
+  {
+    "f": "紛らわしい",
+    "k": "まぎらわしい",
+    "e": "Confusing"
+  },
+  {
+    "f": "情報",
+    "k": "じょうほう",
+    "e": "Information"
+  },
+  {
+    "f": "提供する",
+    "k": "ていきょうする",
+    "e": "To provide"
+  },
+  {
+    "f": "いただきありがとうございます",
+    "k": "",
+    "e": "Formal thank you"
+  },
+  {
+    "f": "週半ば",
+    "k": "",
+    "e": "Mid-week"
+  },
+  {
+    "f": "理解",
+    "k": "りかい",
+    "e": "Understanding"
+  },
+  {
+    "f": "確認する",
+    "k": "かくにんする",
+    "e": "To confirm (something)"
+  },
+  {
+    "f": "受付",
+    "k": "うけつけ",
+    "e": "Reception"
+  },
+  {
+    "f": "下旬",
+    "k": "げじゅん",
+    "e": "Late in the month"
+  },
+  {
+    "f": "上旬",
+    "k": "じょうじゅん",
+    "e": "Early in the month"
+  },
+  {
+    "f": "検討",
+    "k": "けんとう",
+    "e": "Consider"
+  },
+  {
+    "f": "ご担当者様",
+    "k": "ごたんとうしゃさま",
+    "e": "To whom it may concern"
+  },
+  {
+    "f": "初めて連絡いたします",
+    "k": "はじめてれんらくいたします",
+    "e": "This is my first time contacting you"
+  },
+  {
+    "f": "大丈夫",
+    "k": "だいじょうぶ",
+    "e": "OK"
+  },
+  {
+    "f": "会社",
+    "k": "かいしゃ",
+    "e": "Company"
+  },
+  {
+    "f": "〜のに",
+    "k": "",
+    "e": "Even though〜"
+  },
+  {
+    "f": "入る",
+    "k": "はいる",
+    "e": "To enter"
+  },
+  {
+    "f": "〜して",
+    "k": "",
+    "e": "Please do〜, I'll do〜"
+  },
+  {
+    "f": "楽しむ",
+    "k": "たのしむ",
+    "e": "To enjoy"
+  },
+  {
+    "f": "おく",
+    "k": "",
+    "e": "To prepare"
+  },
+  {
+    "f": "〜してある",
+    "k": "",
+    "e": "I have done〜"
+  },
+  {
+    "f": "別",
+    "k": "べつ",
+    "e": "Different"
+  },
+  {
+    "f": "別に",
+    "k": "べつに",
+    "e": "Not so much, It's not important"
+  },
+  {
+    "f": "答え合わせ こたえあわせ",
+    "k": "",
+    "e": "Checking answers"
+  },
+  {
+    "f": "確認",
+    "k": "かくにん",
+    "e": "Confirmation"
+  },
+  {
+    "f": "特長",
+    "k": "とくちょう",
+    "e": "Features"
+  },
+  {
+    "f": "出題",
+    "k": "しゅつだい",
+    "e": "Question"
+  },
+  {
+    "f": "効率",
+    "k": "こうりつ",
+    "e": "Efficiency"
+  },
+  {
+    "f": "学習",
+    "k": "がくしゅう",
+    "e": "Study"
+  },
+  {
+    "f": "対策",
+    "k": "たいさく",
+    "e": "Countermeasure"
+  },
+  {
+    "f": "受験対策",
+    "k": "じゅけんたいさく",
+    "e": "Test preparation"
+  },
+  {
+    "f": "役",
+    "k": "やく",
+    "e": "Role"
+  },
+  {
+    "f": "役に立つ",
+    "k": "やくにたつ",
+    "e": "Useful"
+  },
+  {
+    "f": "文章",
+    "k": "ぶんしょう",
+    "e": "Sentence, Reading comprehension"
+  },
+  {
+    "f": "聞き取り",
+    "k": "ききとり",
+    "e": "Listening"
+  },
+  {
+    "f": "随分",
+    "k": "ずいぶん",
+    "e": "Quite"
+  },
+  {
+    "f": "かぶる",
+    "k": "",
+    "e": "Wear"
+  },
+  {
+    "f": "運転",
+    "k": "うんてん",
+    "e": "Driving"
+  },
+  {
+    "f": "間に合う",
+    "k": "まにあう",
+    "e": "Arrive in time"
+  },
+  {
+    "f": "少ない",
+    "k": "すくない",
+    "e": "Few"
+  },
+  {
+    "f": "服",
+    "k": "ふく",
+    "e": "Clothes"
+  },
+  {
+    "f": "など",
+    "k": "",
+    "e": "Etc."
+  },
+  {
+    "f": "出張",
+    "k": "しゅっちょう",
+    "e": "Business trip"
+  },
+  {
+    "f": "パソコン",
+    "k": "",
+    "e": "PC"
+  },
+  {
+    "f": "ちこく",
+    "k": "",
+    "e": "Late"
+  },
+  {
+    "f": "引っこし",
+    "k": "ひっこし",
+    "e": "Moving"
+  },
+  {
+    "f": "返事",
+    "k": "へんじ",
+    "e": "Reply"
+  },
+  {
+    "f": "あんなに",
+    "k": "",
+    "e": "That much"
+  },
+  {
+    "f": "背の高い",
+    "k": "せのたかい",
+    "e": "Tall"
+  },
+  {
+    "f": "さびしい",
+    "k": "",
+    "e": "Lonely"
+  },
+  {
+    "f": "反対",
+    "k": "はんたい",
+    "e": "Opposite"
+  },
+  {
+    "f": "空いています",
+    "k": "すいています",
+    "e": "Not crowded, Available"
+  },
+  {
+    "f": "住みやすい",
+    "k": "すみやすい",
+    "e": "Livable"
+  },
+  {
+    "f": "生活",
+    "k": "せいかつ",
+    "e": "Life, Living experience"
+  },
+  {
+    "f": "試験",
+    "k": "しけん",
+    "e": "Test"
+  },
+  {
+    "f": "合格",
+    "k": "ごうかく",
+    "e": "Pass a test"
+  },
+  {
+    "f": "目指す",
+    "k": "めざす",
+    "e": "Aim"
+  },
+  {
+    "f": "日常",
+    "k": "にちじょう",
+    "e": "Everyday, Everyday life"
+  },
+  {
+    "f": "基本的、基本",
+    "k": "きほんてき、きほん",
+    "e": "Basic"
+  },
+  {
+    "f": "文型",
+    "k": "ぶんけい",
+    "e": "Sentence pattern"
+  },
+  {
+    "f": "かんとく",
+    "k": "",
+    "e": "Director"
+  },
+  {
+    "f": "かぶん",
+    "k": "",
+    "e": "Stocks"
+  },
+  {
+    "f": "高校生",
+    "k": "",
+    "e": "High school student"
+  },
+  {
+    "f": "りょうしん",
+    "k": "",
+    "e": "Parents"
+  },
+  {
+    "f": "いもうと",
+    "k": "",
+    "e": "Younger sister"
+  },
+  {
+    "f": "あね",
+    "k": "",
+    "e": "Older sister"
+  },
+  {
+    "f": "あに",
+    "k": "",
+    "e": "Older brother"
+  },
+  {
+    "f": "〜しませんか",
+    "k": "",
+    "e": "Would you like to〜？"
+  },
+  {
+    "f": "〜でも",
+    "k": "",
+    "e": "Example"
+  },
+  {
+    "f": "〜何か",
+    "k": "",
+    "e": "Example, informal"
+  },
+  {
+    "f": "しか〜ない",
+    "k": "",
+    "e": "Negative"
+  },
+  {
+    "f": "れいぞうこ",
+    "k": "",
+    "e": "Refrigerator"
+  },
+  {
+    "f": "〜まい",
+    "k": "",
+    "e": "Flat thing counter"
+  },
+  {
+    "f": "そうじ",
+    "k": "",
+    "e": "Cleanup"
+  },
+  {
+    "f": "せんたく",
+    "k": "",
+    "e": "Laundry"
+  },
+  {
+    "f": "このごろ",
+    "k": "",
+    "e": "These days"
+  },
+  {
+    "f": "せまい",
+    "k": "",
+    "e": "small"
+  },
+  {
+    "f": "までに",
+    "k": "",
+    "e": "by"
+  },
+  {
+    "f": "まで",
+    "k": "",
+    "e": "Until"
+  }
+];
 // ─────────────────────────────────────────────────────────────────────────────
 
-let deck = [], idx = 0;
+let deck = [], idx = 0, stage = 0, reversed = false;
+
+function getStages(c) {
+  if (reversed) {
+    const s = [{el:'line-eng', text: c.e}];
+    if (c.k) s.push({el:'line-kana', text: c.k});
+    s.push({el:'line-kanji', text: c.f});
+    return s;
+  } else {
+    const s = [{el:'line-kanji', text: c.f}];
+    if (c.k) s.push({el:'line-kana', text: c.k});
+    s.push({el:'line-eng', text: c.e});
+    return s;
+  }
+}
+
+function show() {
+  const c = deck[idx];
+  const ss = getStages(c);
+  ['line-kanji','line-kana','line-eng'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('visible');
+    el.textContent = '';
+  });
+  for (let i = 0; i <= stage && i < ss.length; i++) {
+    const el = document.getElementById(ss[i].el);
+    el.textContent = ss[i].text;
+    el.classList.add('visible');
+  }
+  const hint = document.getElementById('hint');
+  hint.style.opacity = stage >= ss.length - 1 ? '0' : '1';
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('tot').textContent = deck.length;
+}
+
+function tap() {
+  const ss = getStages(deck[idx]);
+  if (stage < ss.length - 1) {
+    stage++;
+    show();
+  } else {
+    nav(1);
+  }
+}
+
+function nav(dir) {
+  idx = (idx + dir + deck.length) % deck.length;
+  stage = 0;
+  show();
+}
+
+function toggleMode() {
+  reversed = !reversed;
+  const btn = document.getElementById('mode-btn');
+  btn.textContent = reversed ? 'JP first' : 'EN first';
+  btn.classList.toggle('reversed', reversed);
+  stage = 0;
+  show();
+}
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -155,32 +981,14 @@ function shuffle(arr) {
 
 function reshuffle() {
   deck = shuffle([...VOCAB]);
-  idx = 0;
+  idx = 0; stage = 0;
   show();
 }
 
-function show() {
-  document.getElementById('card').classList.remove('flipped');
-  const c = deck[idx];
-  document.getElementById('front-text').textContent = c.f;
-  document.getElementById('back-kana').textContent = c.k;
-  document.getElementById('back-english').textContent = c.e;
-  document.getElementById('cur').textContent = idx + 1;
-  document.getElementById('tot').textContent = deck.length;
-}
+document.getElementById('card-wrap').addEventListener('click', tap);
 
-function nav(dir) {
-  idx = (idx + dir + deck.length) % deck.length;
-  show();
-}
-
-document.getElementById('card-wrap').addEventListener('click', () => {
-  document.getElementById('card').classList.toggle('flipped');
-});
-
-// Swipe
 let tx = 0;
-document.addEventListener('touchstart', e => tx = e.touches[0].clientX, {passive: true});
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive: true});
 document.addEventListener('touchend', e => {
   const dx = e.changedTouches[0].clientX - tx;
   if (Math.abs(dx) > 50) nav(dx < 0 ? 1 : -1);
