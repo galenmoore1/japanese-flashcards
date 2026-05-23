@@ -256,7 +256,7 @@ button:active { background: #374151; }
 <button id="shuffle-btn" onclick="reshuffle()">&#x1F500; Shuffle</button>
 
 <!-- ── Add button ─────────────────────────────────────────────────────────── -->
-<button id="add-btn" onclick="openModal()" aria-label="Add word">+</button>
+<button id="add-btn" aria-label="Add word">+</button>
 
 <!-- ── Modal ─────────────────────────────────────────────────────────────── -->
 <div id="modal-overlay" onclick="overlayClick(event)">
@@ -2056,6 +2056,15 @@ function handleTSV(event) {
 });
 
 document.getElementById('card-wrap').addEventListener('click', tap);
+
+// ── Add button: handle touch explicitly to avoid iOS swipe-handler conflicts ──
+const _addBtn = document.getElementById('add-btn');
+_addBtn.addEventListener('touchend', e => {
+  e.stopPropagation();  // prevent document touchend (swipe detector) from seeing this
+  e.preventDefault();   // prevent the subsequent click event (avoid double-fire)
+  openModal();
+});
+_addBtn.addEventListener('click', openModal);  // desktop fallback
 
 let tx = 0;
 document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive: true});
