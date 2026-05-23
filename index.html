@@ -1902,6 +1902,16 @@ const VOCAB = [
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Load any words previously added via the + button
+const _LS_KEY = 'jp-flashcards-added';
+(function() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
+    const existing = new Set(VOCAB.map(v => v.f));
+    saved.forEach(w => { if (!existing.has(w.f)) { VOCAB.push(w); existing.add(w.f); } });
+  } catch(e) {}
+})();
+
 let deck = [], idx = 0, stage = 0, reversed = false;
 
 function getStages(c) {
@@ -2002,8 +2012,14 @@ function addWord() {
     document.getElementById('modal-status').textContent = 'Kanji/front and English are required.';
     return;
   }
-  VOCAB.push({f, k, e});
-  deck.push({f, k, e});
+  const entry = {f, k, e};
+  VOCAB.push(entry);
+  deck.push(entry);
+  try {
+    const saved = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
+    saved.push(entry);
+    localStorage.setItem(_LS_KEY, JSON.stringify(saved));
+  } catch(err) {}
   document.getElementById('modal-status').style.color = '#34d399';
   document.getElementById('modal-status').textContent = `Added "${f}" — deck now ${deck.length} cards.`;
   ['inp-kanji','inp-kana','inp-eng'].forEach(id => document.getElementById(id).value = '');
