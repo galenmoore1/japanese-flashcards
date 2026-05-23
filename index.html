@@ -277,6 +277,11 @@ button:active { background: #374151; }
     </label>
     <input type="file" id="tsv-file" accept=".tsv,.txt" onchange="handleTSV(event)">
 
+    <button id="export-btn" onclick="exportAdded()"
+      style="background:#111827;border:1px solid #374151;border-radius:12px;color:#9ca3af;font-size:13px;padding:11px;width:100%;cursor:pointer;">
+      &#8595; Export my added words (.tsv)
+    </button>
+
     <div id="modal-status"></div>
   </div>
 </div>
@@ -2060,6 +2065,21 @@ function handleTSV(event) {
     event.target.value = '';
   };
   reader.readAsText(file, 'utf-8');
+}
+
+// ── Export localStorage words as TSV ─────────────────────────────────────────
+function exportAdded() {
+  const saved = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
+  if (!saved.length) {
+    document.getElementById('modal-status').style.color = '#f87171';
+    document.getElementById('modal-status').textContent = 'No added words to export yet.';
+    return;
+  }
+  const tsv = saved.map(w => `${w.f}\t${w.k}\t${w.e}`).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([tsv], {type: 'text/tab-separated-values'}));
+  a.download = `flashcards-added-${new Date().toISOString().slice(0,10)}.tsv`;
+  a.click();
 }
 
 // ── Input: Enter key submits ──────────────────────────────────────────────────
