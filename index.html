@@ -2029,14 +2029,17 @@ function overlayClick(e) {
 }
 
 function addWord() {
-  const f = document.getElementById('inp-kanji').value.trim();
-  const k = document.getElementById('inp-kana').value.trim();
-  const e = document.getElementById('inp-eng').value.trim();
-  if (!f || !e) {
+  const kanji = document.getElementById('inp-kanji').value.trim();
+  const kana  = document.getElementById('inp-kana').value.trim();
+  const e     = document.getElementById('inp-eng').value.trim();
+  if ((!kanji && !kana) || !e) {
     document.getElementById('modal-status').style.color = '#f87171';
-    document.getElementById('modal-status').textContent = 'Kanji/front and English are required.';
+    document.getElementById('modal-status').textContent = 'At least kana or kanji, plus English, are required.';
     return;
   }
+  // If no kanji, promote kana to front
+  const f = kanji || kana;
+  const k = kanji ? kana : '';
   const entry = {f, k, e};
   VOCAB.push(entry);
   deck.push(entry);
@@ -2100,6 +2103,9 @@ function exportAdded() {
   a.href = URL.createObjectURL(new Blob([tsv], {type: 'text/tab-separated-values'}));
   a.download = `flashcards-added-${new Date().toISOString().slice(0,10)}.tsv`;
   a.click();
+  localStorage.removeItem(_LS_KEY);
+  document.getElementById('modal-status').style.color = '#34d399';
+  document.getElementById('modal-status').textContent = `Exported ${saved.length} word${saved.length !== 1 ? 's' : ''} — local storage cleared.`;
 }
 
 // ── Input: Enter key submits ──────────────────────────────────────────────────
