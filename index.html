@@ -121,6 +121,29 @@ button:active { background: #374151; }
 }
 #add-btn:active { background: #1d4ed8; transform: scale(0.94); }
 
+/* ── Remove button ─────────────────────────────────────────────────────────── */
+#remove-btn {
+  position: fixed;
+  bottom: 28px;
+  left: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #374151;
+  border: none;
+  color: #f87171;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  transition: background 0.15s, transform 0.15s;
+  padding: 0;
+}
+#remove-btn:active { background: #4b5563; transform: scale(0.94); }
+
 /* ── Modal ─────────────────────────────────────────────────────────────────── */
 #modal-overlay {
   display: none;
@@ -254,6 +277,9 @@ button:active { background: #374151; }
   <button id="mode-btn" onclick="toggleMode()">EN first</button>
 </div>
 <button id="shuffle-btn" onclick="reshuffle()">&#x1F500; Shuffle</button>
+
+<!-- ── Remove button ──────────────────────────────────────────────────────── -->
+<button id="remove-btn" onclick="removeWord()" aria-label="Remove word">−</button>
 
 <!-- ── Add button ─────────────────────────────────────────────────────────── -->
 <button id="add-btn" onclick="openModal()" aria-label="Add word">+</button>
@@ -1927,13 +1953,22 @@ const VOCAB = [
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Load any words previously added via the + button
-const _LS_KEY = 'jp-flashcards-added';
+// Load added/removed words from localStorage
+const _LS_KEY     = 'jp-flashcards-added';
+const _LS_REM_KEY = 'jp-flashcards-removed';
 (function() {
   try {
+    const removed = new Set(JSON.parse(localStorage.getItem(_LS_REM_KEY) || '[]'));
+    // Filter hardcoded VOCAB
+    for (let i = VOCAB.length - 1; i >= 0; i--) {
+      if (removed.has(VOCAB[i].f)) VOCAB.splice(i, 1);
+    }
+    // Merge added words
     const saved = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
     const existing = new Set(VOCAB.map(v => v.f));
-    saved.forEach(w => { if (!existing.has(w.f)) { VOCAB.push(w); existing.add(w.f); } });
+    saved.forEach(w => {
+      if (!removed.has(w.f) && !existing.has(w.f)) { VOCAB.push(w); existing.add(w.f); }
+    });
   } catch(e) {}
 })();
 
@@ -2090,22 +2125,51 @@ function handleTSV(event) {
   reader.readAsText(file, 'utf-8');
 }
 
-// ── Export localStorage words as TSV ─────────────────────────────────────────
+// ── Remove current card ───────────────────────────────────────────────────────
+function removeWord() {
+  if (!deck.length) return;
+  const word = deck[idx];
+  // Save to removed list
+  try {
+    const removed = JSON.parse(localStorage.getItem(_LS_REM_KEY) || '[]');
+    if (!removed.includes(word.f)) { removed.push(word.f); localStorage.setItem(_LS_REM_KEY, JSON.stringify(removed)); }
+    // Also remove from added list if it was there
+    const added = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
+    const filtered = added.filter(w => w.f !== word.f);
+    localStorage.setItem(_LS_KEY, JSON.stringify(filtered));
+  } catch(e) {}
+  // Remove from VOCAB and deck
+  const vi = VOCAB.findIndex(w => w.f === word.f);
+  if (vi !== -1) VOCAB.splice(vi, 1);
+  deck.splice(idx, 1);
+  if (!deck.length) { document.getElementById('line-kanji').textContent = 'All done!'; return; }
+  idx = idx % deck.length;
+  stage = 0;
+  show();
+}
+
+// ── Export adds + removes as TSV, then clear localStorage ────────────────────
 function exportAdded() {
-  const saved = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
-  if (!saved.length) {
+  const added   = JSON.parse(localStorage.getItem(_LS_KEY)     || '[]');
+  const removed = JSON.parse(localStorage.getItem(_LS_REM_KEY) || '[]');
+  if (!added.length && !removed.length) {
     document.getElementById('modal-status').style.color = '#f87171';
-    document.getElementById('modal-status').textContent = 'No added words to export yet.';
+    document.getElementById('modal-status').textContent = 'Nothing to export yet.';
     return;
   }
-  const tsv = saved.map(w => `${w.f}\t${w.k}\t${w.e}`).join('\n');
+  const lines = [
+    ...added.map(w => `${w.f}\t${w.k}\t${w.e}`),
+    ...removed.map(f => `#REMOVE\t${f}`),
+  ];
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([tsv], {type: 'text/tab-separated-values'}));
-  a.download = `flashcards-added-${new Date().toISOString().slice(0,10)}.tsv`;
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type: 'text/tab-separated-values'}));
+  a.download = `flashcards-${new Date().toISOString().slice(0,10)}.tsv`;
   a.click();
   localStorage.removeItem(_LS_KEY);
+  localStorage.removeItem(_LS_REM_KEY);
+  const total = added.length + removed.length;
   document.getElementById('modal-status').style.color = '#34d399';
-  document.getElementById('modal-status').textContent = `Exported ${saved.length} word${saved.length !== 1 ? 's' : ''} — local storage cleared.`;
+  document.getElementById('modal-status').textContent = `Exported ${total} change${total !== 1 ? 's' : ''} — local storage cleared.`;
 }
 
 // ── Input: Enter key submits ──────────────────────────────────────────────────
@@ -2123,7 +2187,7 @@ document.addEventListener('touchstart', e => {
   _touchTarget = e.target;
 }, {passive: true});
 document.addEventListener('touchend', e => {
-  if (_touchTarget && _touchTarget.closest('#add-btn')) return;
+  if (_touchTarget && _touchTarget.closest('#add-btn, #remove-btn')) return;
   const dx = e.changedTouches[0].clientX - tx;
   if (Math.abs(dx) > 50) nav(dx < 0 ? 1 : -1);
 }, {passive: true});
