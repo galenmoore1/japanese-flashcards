@@ -315,6 +315,7 @@ button:active { background: #374151; }
 <script>
 // ── VOCAB ─────────────────────────────────────────────────────────────────────
 let flashcards = [];
+let VOCAB = [];
 
 async function loadVocabulary() {
   try {
@@ -357,21 +358,31 @@ function startApp() {
 // Load added/removed words from localStorage
 const _LS_KEY     = 'jp-flashcards-added';
 const _LS_REM_KEY = 'jp-flashcards-removed';
-(function() {
+
+async function startApp() {
   try {
     const removed = new Set(JSON.parse(localStorage.getItem(_LS_REM_KEY) || '[]'));
-    // Filter hardcoded VOCAB
-    for (let i = VOCAB.length - 1; i >= 0; i--) {
-      if (removed.has(VOCAB[i].f)) VOCAB.splice(i, 1);
+    // Filter loaded flashcards
+    for (let i = flashcards.length - 1; i >= 0; i--) {
+      if (removed.has(flashcards[i].kanji)) flashcards.splice(i, 1);
     }
     // Merge added words
     const saved = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
-    const existing = new Set(VOCAB.map(v => v.f));
+    const existing = new Set(flashcards.map(v => v.kanji));
     saved.forEach(w => {
-      if (!removed.has(w.f) && !existing.has(w.f)) { VOCAB.push(w); existing.add(w.f); }
+      if (!removed.has(w.f) && !existing.has(w.f)) {
+        flashcards.push({ kanji: w.f, kana: w.k, english: w.e });
+        existing.add(w.f);
+      }
     });
   } catch(e) {}
-})();
+
+  // Map to the old format for compatibility
+  VOCAB = flashcards.map(v => ({ f: v.kanji, k: v.kana, e: v.english }));
+
+  deck = [...VOCAB];
+  reshuffle();
+}
 
 let deck = [], idx = 0, stage = 0, reversed = false;
 
@@ -479,6 +490,7 @@ function addWord() {
   const entry = {f, k, e};
   VOCAB.push(entry);
   deck.push(entry);
+  flashcards.push({ kanji: f, kana: k, english: e });
   try {
     const saved = JSON.parse(localStorage.getItem(_LS_KEY) || '[]');
     saved.push(entry);
@@ -517,7 +529,11 @@ function handleTSV(event) {
   const reader = new FileReader();
   reader.onload = e => {
     const entries = parseTSV(e.target.result);
-    entries.forEach(entry => { VOCAB.push(entry); deck.push(entry); });
+  entries.forEach(entry => {
+    VOCAB.push(entry);
+    deck.push(entry);
+    flashcards.push({ kanji: entry.f, kana: entry.k, english: entry.e });
+  });
     document.getElementById('modal-status').style.color = '#34d399';
     document.getElementById('modal-status').textContent =
       `Imported ${entries.length} new word${entries.length !== 1 ? 's' : ''} — deck now ${deck.length} cards.`;
@@ -542,6 +558,8 @@ function removeWord() {
   // Remove from VOCAB and deck
   const vi = VOCAB.findIndex(w => w.f === word.f);
   if (vi !== -1) VOCAB.splice(vi, 1);
+  const fi = flashcards.findIndex(v => v.kanji === word.f);
+  if (fi !== -1) flashcards.splice(fi, 1);
   deck.splice(idx, 1);
   if (!deck.length) { document.getElementById('line-kanji').textContent = 'All done!'; return; }
   idx = idx % deck.length;
@@ -559,8 +577,8 @@ function exportAdded() {
     return;
   }
   const lines = [
-    ...added.map(w => `${w.f}\t${w.k}\t${w.e}`),
-    ...removed.map(f => `#REMOVE\t${f}`),
+  ...added.map(w => `${w.f}\t${w.k}\t${w.e}`),
+  ...removed.map(f => `#REMOVE\t${f}`),
   ];
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type: 'text/tab-separated-values'}));
