@@ -1,38 +1,34 @@
-	カーテン	Curtain
-	ソフア	Sofa
-冷蔵庫	れいぞうこ	Refrigerator
-	そうそく	Candle
-日記	にっき	Diary
-携帯	けいたい	Cell phone
-桜	さくら	Cherry blossom
-明るい	あかるい	Bright
-暗い	くらい	Dark
-恥ずかしい	はずかしい	Embarrassing; Feeling embarrassed
-大切（な）	たいせつ（な）	Important; Precious
-不安（な）	ふあん（な）	Anxious, worried
-無理（な）	むり（な）	Impossible
-〜が開く	〜があく	〜Opens
-〜が閉まる	〜がしまる	〜Closes
-〜に謝る	〜にあやまる	To apologize to ~ (person)
-〜を落とす	〜をおとす	To drop〜
-〜が沸く	〜がわく	〜Boils
-転ぶ	ころぶ	To fall down
-〜を壊す	〜をこわす	To break ~
-〜が咲く	〜がさく	〜Blooms
-頼む	たのむ	To ask (a favor; person に〜を）
-	〜がつく	〜Turns on
-〜を汚す	〜をよごす	To make ~ dirty
-〜が落ちる	〜がおちる	〜Drops
-〜を片付ける	〜をかたづける	To tidy up ~
-〜が消える	〜がきえる	〜Turns off
-〜が壊れる	〜がこわれる	〜Breaks
-〜が汚れる	〜がよごれる	〜Becomes dirty
-〜を注文する	〜をちゅうもんする	To order ~
-今すぐ	いますぐ	Right away
-	〜までに	By ~ (time / date)
-	まず	First of all
-	〜のおかげで	Thanks to ~
-	どうしよう	What should I / we do?
-	〜（ん）だろう	Short form of 〜（ん）でしょう
-お先に失礼します	おさきにしつれいします	See you (lit. I'm leaving ahead of you)
-お疲れ様でした	おつかれさまでした	Greeting between friends & coworkers (lit. you must be tired after working so hard)
+	いらっしゃる	いる、行く、来る、Honorific
+召し上がる	めしあがる	食べる、飲む、Honorific
+	くださる	くれる、Honorific
+	なさる	する、Honorific
+お休みになる	おやすみになる	寝る、Honorific
+ご覧になる	ごらんになる	見る、Honorific
+	おっしゃる	言う、Honorific
+ご存じですか	ごぞんじですか	知ってる、Honorific
+奥様	おくさま	Your / someone's wife (honorific)
+部長	ぶちょう	Department manager
+出張	しゅっちょう	Business trip
+敬語	けいご	Honorific language
+種類	しゅるい	A kind, a sort
+悩み	なやみ	Worry (n)
+性格	せいかく	Personality
+怠け者	なまけもの	Lazy person
+恥ずかしがり屋	はずかしがりや	Shy person
+仲がいい	なかがいい	Be on good/close terms; get along well (adj)
+送る	おくる	To walk / drive (someone)
+怒る	おこる	To get angry
+知り合う	しりあう	To get acquainted with
+引っ越す	ひっこす	To move to another place (to live)
+寄る	よる	To stop by 
+遅れる	おくれる	To become late
+	かける	To sit down
+	もてる	To be popular (romantic interest)
+遠慮する	えんりょする	To hold back for the time being; to refrain from
+招待する	しょうたいする	To invite someone
+話をする	はなしをする	To have a talk
+	おととい	Day before yesterday
+	それで	Then; therefore
+少々	しょうしょう	A few seconds
+〜名様	〜めいさま	A party of ~ people
+	よろしくおったえください	Please give my best regards (to~)
