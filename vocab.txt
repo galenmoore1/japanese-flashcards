@@ -1,34 +1,37 @@
-	いらっしゃる	いる、行く、来る、Honorific
-召し上がる	めしあがる	食べる、飲む、Honorific
-	くださる	くれる、Honorific
-	なさる	する、Honorific
-お休みになる	おやすみになる	寝る、Honorific
-ご覧になる	ごらんになる	見る、Honorific
-	おっしゃる	言う、Honorific
-ご存じですか	ごぞんじですか	知ってる、Honorific
-奥様	おくさま	Your / someone's wife (honorific)
-部長	ぶちょう	Department manager
-出張	しゅっちょう	Business trip
-敬語	けいご	Honorific language
-種類	しゅるい	A kind, a sort
-悩み	なやみ	Worry (n)
-性格	せいかく	Personality
-怠け者	なまけもの	Lazy person
-恥ずかしがり屋	はずかしがりや	Shy person
-仲がいい	なかがいい	Be on good/close terms; get along well (adj)
-送る	おくる	To walk / drive (someone)
-怒る	おこる	To get angry
-知り合う	しりあう	To get acquainted with
-引っ越す	ひっこす	To move to another place (to live)
-寄る	よる	To stop by 
-遅れる	おくれる	To become late
-	かける	To sit down
-	もてる	To be popular (romantic interest)
-遠慮する	えんりょする	To hold back for the time being; to refrain from
-招待する	しょうたいする	To invite someone
-話をする	はなしをする	To have a talk
-	おととい	Day before yesterday
-	それで	Then; therefore
-少々	しょうしょう	A few seconds
-〜名様	〜めいさま	A party of ~ people
-	よろしくおったえください	Please give my best regards (to~)
+小説	しょうせつ	Novel (n)
+趣味	しゅみ	Hobby, pastime
+宇宙人	うちゅうじん	Space alien
+扇子	せんす	Fan (hand, n)
+係の者	かかりのもの	Our person in charge
+お宅	おたく	Home/house (someone's)
+支店	してん	Branch office
+信号	しんごう	Traffic light
+軽い	かるい	Light (adj)
+不思議（な）	ふしぎ（な）	Mysterious
+	おる	いる（Humble)
+参る	まいる	行く、来る　（Humble)
+申す	もうす	言う　（Humble)
+致す	いたす	する　（Humble)
+	いただく	食べる、飲む　（Humble)
+	ござる	ある　（Humble)
+	〜ておる	〜ている　（Humble)
+	〜でござる	〜です　（Humble)
+頂く	いただく	もらう　（Humble)
+伺う	うかがう	Visit; Ask (Humble, Place or person に）
+曲がる	まがる	To turn (Corner を、Direction に）
+戻る	もどる	To return, to come back
+差し上げる	さしあげる	あげる（Humble)
+聞こえる	きこえる	To be audible　（V. int.)
+伝える	つたえる	To convey a message (person に）
+待たせる	またせる	To keep someone waiting (~を）
+交換する	こうかんする	To exchange (XとYを）
+返品する	へんぴんする	To return (merchandise)
+生活する	せいかつする	To lead a life
+	〜みたいなX	X like ~
+	また	Again
+	では	Well then (polite)
+誠に	まことに	Really (very polite)
+	よろしかったら	If it is OK (polite)
+	かしこまりました	Certainly
+失礼しました	しつれいしました	I am very sorry
+申し訳ありません	もうしわけありません	You have my apologies (polite)
